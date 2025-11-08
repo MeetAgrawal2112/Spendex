@@ -199,5 +199,108 @@ const categorySummary = asyncHandler(async (req, res) => {
 });
 
 
+const dailySummary = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
 
-export {createExpense,getExpenses,updateExpense,deleteExpense,weeklyExpense,monthlyExpense,categorySummary}; ;
+  const endDate = new Date();
+  const last7Days = new Date();
+  last7Days.setDate(endDate.getDate() - 6);
+
+  const filter = { userId, date: { $gte: last7Days, $lte: endDate } };
+
+  const summary = await Expense.aggregate([
+    { $match: filter },
+    {
+      $group: {
+        _id: {
+          $dateToString: { format: "%Y-%m-%d", date: "$date" },
+        },
+        totalSpent: { $sum: "$amount" },
+      },
+    },
+    { $sort: { _id: 1 } },
+  ]);
+
+  const summaryMap = new Map(summary.map(item => [item._id, item.totalSpent]));
+
+  // Step 5: Fill in missing days with totalSpent = 0
+  const formattedSummary = [];
+  for (let i = 0; i < 7; i++) {
+    const currentDate = new Date(last7Days);
+    currentDate.setDate(last7Days.getDate() + i);
+    const formattedDate = currentDate.toISOString().split("T")[0]; // YYYY-MM-DD
+
+    formattedSummary.push({
+      date: formattedDate,
+      totalSpent: summaryMap.get(formattedDate) || 0,
+    });
+  }
+
+  res.status(200).json(
+    new ApiResponse(
+      200,
+      formattedSummary,
+      "Daily expense summary (last 7 days) fetched successfully"
+    )
+  );
+});
+
+
+const customDatesExpense = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+  let { startDate, endDate } = req.body;
+
+  startDate = new Date(startDate);
+  endDate = new Date(endDate);
+
+  if (!startDate || !endDate || isNaN(startDate) || isNaN(endDate)) {
+    throw new ApiError(400, "Please provide valid startDate and endDate");
+  }
+  if (startDate > endDate) {
+    throw new ApiError(400, "startDate cannot be greater than endDate");
+  }
+
+  const filter = { userId, date: { $gte: startDate, $lte: endDate } };
+
+  const summary = await Expense.aggregate([
+    { $match: filter },
+    {
+      $group: {
+        _id: {
+          $dateToString: { format: "%Y-%m-%d", date: "$date" },
+        },
+        totalSpent: { $sum: "$amount" },
+      },
+    },
+    { $sort: { _id: 1 } },
+  ]);
+
+  const summaryMap = new Map(summary.map(item => [item._id, item.totalSpent]));
+
+  // ✅ Generate all dates in range and fill missing with 0
+  const formattedSummary = [];
+  const totalDays =
+    Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+
+  for (let i = 0; i < totalDays; i++) {
+    const currentDate = new Date(startDate);
+    currentDate.setDate(startDate.getDate() + i);
+    const formattedDate = currentDate.toISOString().split("T")[0];
+
+    formattedSummary.push({
+      date: formattedDate,
+      totalSpent: summaryMap.get(formattedDate) || 0,
+    });
+  }
+
+  res.status(200).json(
+    new ApiResponse(
+      200,
+      formattedSummary,
+      "Daily expense summary (custom dates) fetched successfully"
+    )
+  );
+});
+
+
+export {createExpense,getExpenses,updateExpense,deleteExpense,weeklyExpense,monthlyExpense,categorySummary,dailySummary,customDatesExpense}; ;

@@ -12,7 +12,7 @@ const cookieOptions = {
 };
 
 const logoutUser = asyncHandler(async (req, res) => {
-  const { refreshToken } = req.cookies;
+  const refreshToken = req.cookies?.refreshToken;
   if (!refreshToken) {
     throw new ApiError(400, "No refresh token found");
   }
@@ -38,7 +38,7 @@ const logoutUser = asyncHandler(async (req, res) => {
 });
 
 const logoutAllDevices = asyncHandler(async (req, res) => {
-  const userId = req.user?._id; 
+  const userId = req.user?._id;
 
   if (!userId) {
     throw new ApiError(401, "Unauthorized: Invalid user");
@@ -56,7 +56,6 @@ const logoutAllDevices = asyncHandler(async (req, res) => {
     .clearCookie("refreshToken", cookieOptions)
     .json(new ApiResponse(200, {}, "Logged out from all devices successfully"));
 });
-
 
 const signupUser = asyncHandler(async (req, res) => {
   let { fullName, email, password, deviceInfo } = req.body;
@@ -85,7 +84,9 @@ const signupUser = asyncHandler(async (req, res) => {
 
   await user.save();
 
-  const responseUser = await User.findById(user._id).select("-password -refreshTokens");
+  const responseUser = await User.findById(user._id).select(
+    "-password -refreshTokens"
+  );
 
   res
     .status(201)
@@ -128,11 +129,14 @@ const loginUser = asyncHandler(async (req, res) => {
 
   await user.save();
 
-  const loggedInUser = await User.findById(user._id).select("-password -refreshTokens");
+  const loggedInUser = await User.findById(user._id).select(
+    "-password -refreshTokens"
+  );
 
   res
     .status(200)
     .cookie("refreshToken", refreshToken, cookieOptions)
+    .cookie("accessToken", accessToken, cookieOptions)
     .json(
       new ApiResponse(
         200,

@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import mongoosePaginate from 'mongoose-paginate-v2';
+import mongoosePaginate from "mongoose-paginate-v2";
 
 const expenseSchema = new mongoose.Schema(
   {
@@ -34,7 +34,14 @@ const expenseSchema = new mongoose.Schema(
     },
     paymentMethod: {
       type: String,
-      enum: ["cash", "credit card", "debit card", "upi", "net banking", "other"],
+      enum: [
+        "cash",
+        "credit card",
+        "debit card",
+        "upi",
+        "net banking",
+        "other",
+      ],
       default: "cash",
     },
     recurring: {
@@ -45,7 +52,7 @@ const expenseSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-expenseSchema.plugin(mongoosePaginate)
+expenseSchema.plugin(mongoosePaginate);
 // Compound index for efficient user + date queries (for summaries)
 expenseSchema.index({ userId: 1, date: -1 });
 
