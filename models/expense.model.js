@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import mongoosePaginate from 'mongoose-paginate-v2';
 
 const expenseSchema = new mongoose.Schema(
   {
@@ -44,6 +45,7 @@ const expenseSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+expenseSchema.plugin(mongoosePaginate)
 // Compound index for efficient user + date queries (for summaries)
 expenseSchema.index({ userId: 1, date: -1 });
 

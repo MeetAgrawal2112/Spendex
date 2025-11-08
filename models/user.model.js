@@ -29,10 +29,6 @@ const userSchema = new mongoose.Schema(
       enum: ["active", "suspended", "deactivated"],
       default: "active",
     },
-    isVerified: {
-      type: Boolean,
-      default: false,
-    },
     profilePic: {
       type: String,
     },
