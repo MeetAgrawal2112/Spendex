@@ -9,6 +9,8 @@ import {
   categorySummary,
   dailySummary,
   customDatesExpense,
+  averageWeeklyExpense,
+  topCategorySpending,
 } from "../controllers/expense.controller.js";
 import { verifyJwt } from "../middlewares/user.middleware.js";
 
@@ -26,5 +28,7 @@ router.get("/summary/weekly", verifyJwt, weeklyExpense);
 router.get("/summary/monthly", verifyJwt, monthlyExpense);
 router.get("/summary/category", verifyJwt, categorySummary);
 router.post("/summary/custom", verifyJwt, customDatesExpense); // uses body: startDate, endDate
+router.get("/summary/average/weekly",verifyJwt,averageWeeklyExpense);
+router.get("/summary/topcategorical/expense",verifyJwt,topCategorySpending);
 
 export default router;

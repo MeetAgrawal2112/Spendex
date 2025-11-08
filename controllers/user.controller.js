@@ -146,4 +146,25 @@ const loginUser = asyncHandler(async (req, res) => {
     );
 });
 
-export { signupUser, loginUser, logoutAllDevices, logoutUser };
+const refreshAccessToken = asyncHandler(async (req, res) => {
+  const refreshToken = req.cookies?.refreshToken;
+  if (!refreshToken) {
+    throw new ApiError(400, "No refresh token found");
+  }
+  let decodedUser;
+  try {
+    decodedUser = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+  }
+  catch {
+    throw new ApiError(400, "Invalid or expired refresh token");
+  }
+  const user = await User.findById(decodedUser._id);
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+  const newAccessToken = user.generateAccessToken();
+  res
+    .cookie("accessToken", newAccessToken, cookieOptions)
+    .json(new ApiResponse(200, { accessToken: newAccessToken }, "Access token refreshed successfully"));
+});
+export { signupUser, loginUser, logoutAllDevices, logoutUser, refreshAccessToken };

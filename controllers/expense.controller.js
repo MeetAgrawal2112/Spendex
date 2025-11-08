@@ -302,5 +302,72 @@ const customDatesExpense = asyncHandler(async (req, res) => {
   );
 });
 
+const averageWeeklyExpense = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
 
-export {createExpense,getExpenses,updateExpense,deleteExpense,weeklyExpense,monthlyExpense,categorySummary,dailySummary,customDatesExpense}; ;
+  // Define the 7-day range
+  const endDate = new Date();
+  const startDate = new Date();
+  startDate.setDate(endDate.getDate() - 6); // includes today
+
+  // Filter for last 7 days
+  const filter = { userId, date: { $gte: startDate, $lte: endDate } };
+
+  // Aggregate total spent
+  const spent = await Expense.aggregate([
+    { $match: filter },
+    { $group: { _id: null, totalSpent: { $sum: "$amount" } } }
+  ]);
+
+  const totalSpent = spent.length > 0 ? spent[0].totalSpent : 0;
+  const averageWeeklyExpense = Number((totalSpent / 7).toFixed(2)); // format to 2 decimals
+
+  res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        totalSpent,
+        averageWeeklyExpense,
+        range: {
+          startDate: startDate.toISOString().split("T")[0],
+          endDate: endDate.toISOString().split("T")[0]
+        }
+      },
+      "Average weekly expense fetched successfully"
+    )
+  );
+});
+
+
+const topCategorySpending=asyncHandler(async(req,res)=>{
+  const userId=req.user._id;
+  const endDate=new Date();
+  const startDate=new Date();
+  startDate.setDate(endDate.getDate()-6);
+  const filter={userId,date:{$gte:startDate,$lte:endDate}};
+  const summary=await Expense.aggregate([
+    {$match:filter},
+    {
+      $group:{
+        _id:"$category",
+        totalSpent:{$sum:"$amount"}
+      }
+    },
+    {$sort:{totalSpent:-1}},
+    {$limit:3}
+  ]); 
+  if(summary.length===0){
+    return res.status(200).json(new ApiResponse(200,[], "No expenses found in the last 7 days"));
+  }
+
+  const topCategory=summary.map(item=>({
+    category:item._id,
+    totalSpent:item.totalSpent
+  }));
+
+  return res.status(200)
+  .json(new ApiResponse(200,topCategory,"Top 3 category spending in last 7 days fetched successfully"));
+
+})
+
+export {createExpense,getExpenses,updateExpense,deleteExpense,weeklyExpense,monthlyExpense,categorySummary,dailySummary,customDatesExpense,topCategorySpending, averageWeeklyExpense}; ;
